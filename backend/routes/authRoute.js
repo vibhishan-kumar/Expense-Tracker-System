@@ -16,9 +16,13 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Check if user exists
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) return res.status(400).json({ error: 'Email already in use' });
+        // Check if email already in use
+        const existingEmail = await User.findOne({ where: { email } });
+        if (existingEmail) return res.status(400).json({ error: 'Email already in use' });
+
+        // Check if registration number already in use
+        const existingReg = await User.findOne({ where: { registration_number } });
+        if (existingReg) return res.status(400).json({ error: 'Registration number is already registered' });
 
         // Hash password
         const salt = await bcrypt.genSalt(10);
@@ -39,6 +43,15 @@ router.post('/register', async (req, res) => {
         res.status(201).json({ message: 'User registered successfully', userId: newUser.id });
     } catch (error) {
         console.error('Registration Error:', error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            const field = error.errors?.[0]?.path;
+            const message = field === 'registration_number'
+                ? 'Registration number is already registered'
+                : field === 'email'
+                ? 'Email already in use'
+                : 'A user with these credentials already exists';
+            return res.status(400).json({ error: message });
+        }
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
