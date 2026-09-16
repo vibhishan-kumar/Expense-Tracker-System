@@ -4,21 +4,21 @@ import { LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Login: React.FC = () => {
+const Login = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
       const res = await axios.post('/api/auth/login', { email, password });
       login(res.data.token, res.data.user);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {
       setLoading(false);
@@ -43,7 +43,7 @@ const Login: React.FC = () => {
             <input
               type="email"
               className="input-base"
-              placeholder="e.g. rahul@uoh.edu"
+              placeholder="e.g. rahul@uoh.edu or admin@uoh.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -71,6 +71,10 @@ const Login: React.FC = () => {
         <p style={{ textAlign: 'center', marginTop: '20px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           Don't have an account? <Link to="/register" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Register here</Link>
         </p>
+
+        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          Demo Admin: <code>admin@uoh.edu</code> &bull; <code>Admin123@</code>
+        </div>
       </div>
     </div>
   );

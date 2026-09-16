@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { 
-  LogOut, Plus, IndianRupee, Edit2, Trash2, User, 
+  Plus, IndianRupee, Edit2, Trash2, User, 
   Settings, Bell, FileText, X, Filter, Download, 
-  Eye, EyeOff, TrendingUp, TrendingDown, Menu 
+  Eye, EyeOff, Menu, ShieldCheck 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TransactionModal from '../components/TransactionModal';
@@ -12,15 +12,15 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-const Dashboard: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+const Dashboard = () => {
+  const [user, setUser] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTx, setSelectedTx] = useState<any>(null);
-  const [initialType, setInitialType] = useState<'income' | 'expense'>('expense');
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [initialType, setInitialType] = useState('expense');
+  const [notifications, setNotifications] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,29 +38,13 @@ const Dashboard: React.FC = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData && userData !== 'undefined') {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        fetchInitialData(parsedUser.id);
-        fetchNotifications(parsedUser.id);
-      } catch (e) {
-        handleLogout();
-      }
-    } else {
-      handleLogout();
-    }
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   }, []);
 
-  const fetchInitialData = async (userId: number) => {
-    setLoading(true);
-    await fetchData(userId, showDeleted);
-    setLoading(false);
-  };
-
-  const fetchData = async (userId: number, includeDeleted: boolean) => {
+  const fetchData = useCallback(async (userId, includeDeleted) => {
     try {
       setLoadingHistory(true);
       const [txRes, catRes] = await Promise.all([
@@ -76,30 +60,46 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
 
-  const fetchNotifications = async (userId: number) => {
+  const fetchNotifications = useCallback(async (userId) => {
     try {
       const res = await axios.get(`/api/notifications/${userId}`);
       setNotifications(res.data);
     } catch(e) {}
-  };
+  }, []);
 
-  const handleMarkAsRead = async (e: any, id: number) => {
+  const fetchInitialData = useCallback(async (userId) => {
+    setLoading(true);
+    await fetchData(userId, showDeleted);
+    setLoading(false);
+  }, [fetchData, showDeleted]);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData && userData !== 'undefined') {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        fetchInitialData(parsedUser.id);
+        fetchNotifications(parsedUser.id);
+      } catch (e) {
+        handleLogout();
+      }
+    } else {
+      handleLogout();
+    }
+  }, [handleLogout, fetchInitialData, fetchNotifications]);
+
+  const handleMarkAsRead = async (e, id) => {
     e.stopPropagation();
     try {
       await axios.put(`/api/notifications/${id}/read`);
-      fetchNotifications(user.id);
+      if (user) fetchNotifications(user.id);
     } catch (e) {}
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/';
-  };
-
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id) => {
     if(window.confirm('Are you sure you want to delete this transaction?')) {
       try {
         await axios.delete(`/api/transactions/${id}`);
@@ -111,19 +111,18 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const openModal = (type: 'income' | 'expense') => {
+  const openModal = (type) => {
     setInitialType(type);
     setSelectedTx(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (tx: any) => {
+  const openEditModal = (tx) => {
     setSelectedTx(tx);
     setInitialType(tx.transaction_type);
     setIsModalOpen(true);
   };
 
-  // History Logic
   const handleToggleDeleted = () => {
     const next = !showDeleted;
     setShowDeleted(next);
@@ -196,11 +195,18 @@ const Dashboard: React.FC = () => {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', position: 'relative' }}>
         <div>
           <h1 className="text-gradient">Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Welcome back, {user?.name}</p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+            Welcome back, {user?.name} {user?.role === 'admin' && <span style={{ color: '#a855f7', fontWeight: 600 }}>(Admin)</span>}
+          </p>
         </div>
         
         {/* Desktop Navigation */}
         <div className="mobile-nav-hidden" style={{ gap: '12px' }}>
+          {user?.role === 'admin' && (
+            <button onClick={() => navigate('/admin')} className="btn-primary" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', gap: '6px' }}>
+              <ShieldCheck size={16} /> Admin Portal
+            </button>
+          )}
           <button onClick={() => setShowNotifs(!showNotifs)} className="btn-primary" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', position: 'relative' }}>
             <Bell size={16} />
             {notifications.filter(n => !n.is_read).length > 0 && <span style={{ position: 'absolute', top: -5, right: -5, background: 'var(--danger)', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{notifications.filter(n => !n.is_read).length}</span>}
@@ -230,6 +236,11 @@ const Dashboard: React.FC = () => {
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
           <div className="glass-panel animate-fade-in mobile-nav-visible" style={{ position: 'absolute', top: '100%', right: '0', width: '200px', zIndex: 100, padding: '16px', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+            {user?.role === 'admin' && (
+              <button onClick={() => navigate('/admin')} className="btn-primary" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', width: '100%', justifyContent: 'flex-start', gap: '6px' }}>
+                <ShieldCheck size={16} /> Admin Portal
+              </button>
+            )}
             <button onClick={() => navigate('/reports')} className="btn-primary" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', width: '100%', justifyContent: 'flex-start' }}>
               <FileText size={16} /> Reports
             </button>
@@ -242,7 +253,7 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Notifications Dropdown (Desktop & Mobile) */}
+        {/* Notifications Dropdown */}
         {showNotifs && (
           <div className="glass-panel animate-fade-in" style={{ position: 'absolute', top: '110%', right: '0', width: '300px', zIndex: 101, padding: '16px' }}>
              <h4 style={{ marginBottom: '12px', color: 'var(--text-primary)' }}>Notifications</h4>

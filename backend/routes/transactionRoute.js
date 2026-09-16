@@ -2,6 +2,8 @@ const express = require('express');
 const { Transaction, Category, Budget, Notification } = require('../models');
 const { Op } = require('sequelize');
 
+const { validateTransaction } = require('../middleware/validationMiddleware');
+
 const router = express.Router();
 
 // Middleware to simulate authentication for Phase 2 test
@@ -24,7 +26,7 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Add a transaction
-router.post('/', async (req, res) => {
+router.post('/', validateTransaction, async (req, res) => {
     try {
         const { user_id, category_id, amount, transaction_type, source_or_description, date, payment_method } = req.body;
         

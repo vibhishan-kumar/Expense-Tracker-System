@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Shield, RefreshCw, Trash2, ArrowLeft, IndianRupee, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const BudgetsAndBills: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'budgets' | 'bills'>('budgets');
-  const [budgets, setBudgets] = useState<any[]>([]);
-  const [bills, setBills] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
+const BudgetsAndBills = () => {
+  const [activeTab, setActiveTab] = useState('budgets');
+  const [budgets, setBudgets] = useState([]);
+  const [bills, setBills] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Forms
@@ -18,16 +18,7 @@ const BudgetsAndBills: React.FC = () => {
   const [showAddBill, setShowAddBill] = useState(false);
   const [billForm, setBillForm] = useState({ category_id: '', title: '', amount: '', due_date: '', is_auto_post: false });
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      fetchData(parsedUser.id);
-    }
-  }, []);
-
-  const fetchData = async (userId: number) => {
+  const fetchData = useCallback(async (userId) => {
     try {
       const [bdgRes, billsRes, catRes] = await Promise.all([
         axios.get(`/api/budgets/${userId}`),
@@ -42,43 +33,58 @@ const BudgetsAndBills: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const deleteBudget = async (id: number) => {
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchData(parsedUser.id);
+    }
+  }, [fetchData]);
+
+  const deleteBudget = async (id) => {
     if(window.confirm('Delete this budget limit?')) {
       await axios.delete(`/api/budgets/${id}`);
-      fetchData(user.id);
+      if (user) fetchData(user.id);
     }
   };
 
-  const deleteBill = async (id: number) => {
+  const deleteBill = async (id) => {
     if(window.confirm('Delete this recurring bill?')) {
       await axios.delete(`/api/recurring-bills/${id}`);
-      fetchData(user.id);
+      if (user) fetchData(user.id);
     }
   };
 
-  const toggleBill = async (id: number) => {
+  const toggleBill = async (id) => {
     await axios.put(`/api/recurring-bills/${id}/toggle`);
-    fetchData(user.id);
+    if (user) fetchData(user.id);
   };
 
-  const handleAddBudget = async (e: React.FormEvent) => {
+  const handleAddBudget = async (e) => {
     e.preventDefault();
     try {
       await axios.post('/api/budgets', { ...budgetForm, user_id: user.id, category_id: budgetForm.category_id || null });
       setShowAddBudget(false);
+      setBudgetForm({ category_id: '', period_type: 'monthly', amount_limit: '', start_date: '', end_date: '' });
       fetchData(user.id);
-    } catch (e) { alert('Error adding budget'); }
+    } catch (e) { 
+      alert(e.response?.data?.error || 'Error adding budget'); 
+    }
   };
 
-  const handleAddBill = async (e: React.FormEvent) => {
+  const handleAddBill = async (e) => {
     e.preventDefault();
     try {
       await axios.post('/api/recurring-bills', { ...billForm, user_id: user.id });
       setShowAddBill(false);
+      setBillForm({ category_id: '', title: '', amount: '', due_date: '', is_auto_post: false });
       fetchData(user.id);
-    } catch (e) { alert('Error adding bill. Pick a category!'); }
+    } catch (e) { 
+      alert(e.response?.data?.error || 'Error adding bill. Pick a category!'); 
+    }
   };
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading Limits...</div>;

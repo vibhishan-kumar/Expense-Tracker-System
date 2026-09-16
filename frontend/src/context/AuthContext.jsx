@@ -1,25 +1,19 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-interface AuthContextType {
-  isAuthenticated: boolean;
-  user: any | null;
-  login: (token: string, userData: any) => void;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext({
   isAuthenticated: false,
   user: null,
+  isAdmin: false,
   login: () => {},
   logout: () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     // Bootstrap auth state from localStorage on mount
@@ -27,7 +21,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const raw = localStorage.getItem('user');
     if (token && raw && raw !== 'undefined') {
       try {
-        setUser(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        setUser(parsed);
         setIsAuthenticated(true);
       } catch {
         logout();
@@ -48,7 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const login = (token: string, userData: any) => {
+  const login = (token, userData) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
@@ -63,8 +58,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     window.location.href = '/login';
   };
 
+  const isAdmin = user?.role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

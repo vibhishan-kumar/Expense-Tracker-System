@@ -3,19 +3,19 @@ import axios from 'axios';
 import { Save, ArrowLeft, Plus, Trash2, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const Profile: React.FC = () => {
+const Profile = () => {
   const [formData, setFormData] = useState({
     id: '', name: '', course: '', student_type: 'hosteller',
     hostel_name: '', semester: '', phone_number: '',
     email: '', registration_number: '', scholarship_amount: '',
     profile_image: '', profile_image_base64: ''
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [userId, setUserId] = useState<number | null>(null);
+  const fileInputRef = useRef(null);
+  const [userId, setUserId] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState([]);
   const [newExpName, setNewExpName] = useState('');
   const [newIncName, setNewIncName] = useState('');
 
@@ -25,7 +25,6 @@ const Profile: React.FC = () => {
       const parsedUser = JSON.parse(userData);
       setUserId(parsedUser.id);
       
-      // 1. Initial Load from LocalStorage (Fallback)
       setFormData(prev => ({
         ...prev,
         id: parsedUser.id,
@@ -35,7 +34,6 @@ const Profile: React.FC = () => {
         registration_number: parsedUser.registration_number || ''
       }));
 
-      // 2. Fetch fresh, detailed data from backend
       axios.get(`/api/users/${parsedUser.id}`)
         .then(res => {
           const u = res.data;
@@ -62,7 +60,7 @@ const Profile: React.FC = () => {
     }
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
@@ -78,7 +76,7 @@ const Profile: React.FC = () => {
 
     const phoneRegex = /^\d{10}$/;
     if (formData.phone_number && !phoneRegex.test(formData.phone_number)) {
-      setError('enter valid phone number');
+      setError('Enter valid 10-digit phone number');
       setLoading(false);
       return;
     }
@@ -93,25 +91,25 @@ const Profile: React.FC = () => {
       const res = await axios.put(`/api/users/${userId}`, formData);
       localStorage.setItem('user', JSON.stringify(res.data));
       setMessage('Profile updated successfully!');
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.error || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, profile_image_base64: reader.result as string, profile_image: reader.result as string });
+        setFormData({ ...formData, profile_image_base64: reader.result, profile_image: reader.result });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleCreateIncomeCategory = async (e: React.FormEvent) => {
+  const handleCreateIncomeCategory = async (e) => {
     e.preventDefault();
     if(!newIncName.trim()) return;
     try {
@@ -127,7 +125,7 @@ const Profile: React.FC = () => {
     } catch (e) { alert('Error creating category'); }
   };
 
-  const handleCreateExpenseCategory = async (e: React.FormEvent) => {
+  const handleCreateExpenseCategory = async (e) => {
     e.preventDefault();
     if(!newExpName.trim()) return;
     try {
@@ -143,7 +141,7 @@ const Profile: React.FC = () => {
     } catch (e) { alert('Error creating category'); }
   };
 
-  const handleDeleteCategory = async (catId: number) => {
+  const handleDeleteCategory = async (catId) => {
     if(!window.confirm('Delete this category?')) return;
     try {
       await axios.delete(`/api/categories/${catId}`);
@@ -155,7 +153,7 @@ const Profile: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/';
+    window.location.href = '/login';
   };
 
   return (
@@ -178,7 +176,6 @@ const Profile: React.FC = () => {
 
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-        {/* Profile image preview + Local Upload */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '8px' }}>
             <div 
               onClick={() => fileInputRef.current?.click()}
@@ -273,7 +270,7 @@ const Profile: React.FC = () => {
               />
             </div>
             <div className="flex-1">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Scholarship / Monthly Aid Amount (₹)</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Scholarship / Aid (₹)</label>
               <input type="number" className="input-base" value={formData.scholarship_amount} onChange={e => setFormData({...formData, scholarship_amount: e.target.value})} placeholder="0.00" />
             </div>
           </div>
@@ -317,7 +314,6 @@ const Profile: React.FC = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '32px' }}>Create your own personalized categories to track spending dynamically across the app.</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
-            {/* Income Section */}
             <div className="glass-panel" style={{ padding: '24px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
               <h4 style={{ color: 'var(--success)', marginBottom: '20px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                  Income Categories
@@ -340,7 +336,6 @@ const Profile: React.FC = () => {
               </div>
             </div>
 
-            {/* Expense Section */}
             <div className="glass-panel" style={{ padding: '24px', background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
               <h4 style={{ color: 'var(--danger)', marginBottom: '20px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                  Expense Categories

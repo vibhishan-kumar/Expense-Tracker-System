@@ -1,5 +1,6 @@
 const express = require('express');
 const { Budget, Category } = require('../models');
+const { validateBudget } = require('../middleware/validationMiddleware');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Create limit
-router.post('/', async (req, res) => {
+router.post('/', validateBudget, async (req, res) => {
     try {
         const bdg = await Budget.create(req.body);
         res.status(201).json(bdg);

@@ -3,21 +3,21 @@ import axios from 'axios';
 import { UserPlus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Register: React.FC = () => {
+const Register = () => {
   const [formData, setFormData] = useState({
     name: '', registration_number: '', email: '', password: '', 
-    course: '', student_type: 'hosteller', hostel_name: '', semester: ''
+    course: '', student_type: 'hosteller', hostel_name: '', semester: '', phone_number: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Final Validation Checks
+    // Pre-flight Client Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
@@ -27,7 +27,7 @@ const Register: React.FC = () => {
 
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
     if (!passwordRegex.test(formData.password)) {
-      setError('Password must be at least 8 characters long, containing one uppercase letter, one digit, and one special character.');
+      setError('Password must be at least 8 characters long, containing 1 uppercase letter, 1 number, and 1 special character.');
       setLoading(false);
       return;
     }
@@ -40,9 +40,9 @@ const Register: React.FC = () => {
 
     try {
       await axios.post('/api/auth/register', formData);
-      alert('Registration successful! Please login.');
+      alert('Registration successful! Please sign in.');
       navigate('/login');
-    } catch (err: any) {
+    } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
@@ -55,7 +55,11 @@ const Register: React.FC = () => {
         <h2 className="text-gradient" style={{ textAlign: 'center', marginBottom: '8px', fontSize: '2rem' }}>Create Account</h2>
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '32px' }}>Join the Expense Tracker</p>
         
-        {error && <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '20px', textAlign: 'center', fontSize: '0.9rem' }}>{error}</div>}
+        {error && (
+          <div style={{ background: 'var(--danger-bg)', color: 'var(--danger)', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '20px', textAlign: 'center', fontSize: '0.9rem' }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="flex-responsive">
@@ -76,18 +80,36 @@ const Register: React.FC = () => {
             </div>
             <div className="flex-1">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Reg. Number</label>
-              <input type="text" className="input-base" required value={formData.registration_number} onChange={e => setFormData({...formData, registration_number: e.target.value})} />
+              <input 
+                type="text" 
+                className="input-base" 
+                required 
+                value={formData.registration_number} 
+                onChange={e => setFormData({...formData, registration_number: e.target.value})} 
+              />
             </div>
           </div>
 
           <div className="flex-responsive">
             <div className="flex-1">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Email</label>
-              <input type="email" className="input-base" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input 
+                type="email" 
+                className="input-base" 
+                required 
+                value={formData.email} 
+                onChange={e => setFormData({...formData, email: e.target.value})} 
+              />
             </div>
             <div className="flex-1">
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Password</label>
-              <input type="password" className="input-base" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <input 
+                type="password" 
+                className="input-base" 
+                required 
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})} 
+              />
             </div>
           </div>
 
@@ -133,7 +155,14 @@ const Register: React.FC = () => {
             {formData.student_type === 'hosteller' && (
               <div className="flex-1">
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Hostel Name</label>
-                <input type="text" className="input-base" required value={formData.hostel_name} onChange={e => setFormData({...formData, hostel_name: e.target.value})} />
+                <input 
+                  type="text" 
+                  className="input-base" 
+                  required 
+                  placeholder="e.g. NRS, MH-L, LH"
+                  value={formData.hostel_name} 
+                  onChange={e => setFormData({...formData, hostel_name: e.target.value})} 
+                />
               </div>
             )}
           </div>

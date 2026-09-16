@@ -7,6 +7,7 @@ const User = sequelize.define('User', {
     registration_number: { type: DataTypes.STRING(50), unique: true, allowNull: false },
     email: { type: DataTypes.STRING(100), unique: true, allowNull: false },
     password_hash: { type: DataTypes.STRING(255), allowNull: false },
+    role: { type: DataTypes.STRING(20), defaultValue: 'user', allowNull: false },
     course: { type: DataTypes.STRING(100) },
     student_type: { type: DataTypes.ENUM('hosteller', 'day_scholar'), allowNull: false },
     hostel_name: { type: DataTypes.STRING(100) },

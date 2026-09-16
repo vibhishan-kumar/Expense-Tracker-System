@@ -1,34 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
 const COLORS = ['#8C82FC', '#4DB6AC', '#FF8A65', '#9575CD', '#F06292', '#81C784', '#64B5F6'];
 
-interface PieChartProps {
-  userId: number;
-  refreshKey?: number;
-}
+const ExpensePieChart = ({ userId, refreshKey }) => {
+  const [data, setData] = useState(null);
 
-const ExpensePieChart: React.FC<PieChartProps> = ({ userId, refreshKey }) => {
-  const [data, setData] = useState<any>(null);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [userId, refreshKey]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const res = await axios.get(`/api/analytics/${userId}`);
       setData(res.data);
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics, refreshKey]);
 
   if (!data) return null;
 
-  const chartData = Object.keys(data.categoryBreakdown).map(key => ({
+  const chartData = Object.keys(data.categoryBreakdown || {}).map(key => ({
     name: key,
     value: data.categoryBreakdown[key]
   }));
@@ -58,7 +53,7 @@ const ExpensePieChart: React.FC<PieChartProps> = ({ userId, refreshKey }) => {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: any) => [`₹${value}`, 'Amount']}
+                formatter={(value) => [`₹${value}`, 'Amount']}
                 contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--glass-border)', borderRadius: '8px' }}
                 itemStyle={{ color: 'var(--text-primary)' }}
               />

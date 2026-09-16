@@ -27,6 +27,7 @@ app.use('/api/recurring-bills',authMiddleware, require('./routes/recurringBillRo
 app.use('/api/analytics',      authMiddleware, require('./routes/analyticsRoute'));
 app.use('/api/notifications',  authMiddleware, require('./routes/notificationRoute'));
 app.use('/api/reports',        authMiddleware, require('./routes/reportRoute'));
+app.use('/api/admin',          authMiddleware, require('./routes/adminRoute'));
 
 app.get('/', (req, res) => {
     res.send('Expense Tracker API is running...');
